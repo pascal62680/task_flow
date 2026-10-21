@@ -1,0 +1,102 @@
+# ============================================================================
+# compose.prod.yaml : la "production" (stack séparée de l'environnement de dev).
+#
+# Elle vit dans son propre dossier (~/taskflow-prod/, le "DEPLOY_DIR") avec ses
+# propres fichiers : compose.prod.yaml, nginx/, deploy.sh, backup.sh, et SEULEMENT
+# là : .env (secrets), certs/ (certificats) et backups/.
+#
+# Différences avec compose.yaml (développement) :
+#   - pas de `build:` : on tire des images DÉJÀ construites par le CI et publiées
+#     sur ghcr.io (l'image testée est celle qui est déployée) ;
+#   - le tag de l'image (IMAGE_TAG) choisit la version qui tourne ;
+#   - la configuration vient du fichier .env (jamais versionné) ;
+#   - un service `proxy` (Nginx) est le SEUL à publier des ports : c'est le point
+#     d'entrée unique, il gère HTTPS. Le front, l'API et la base restent privés.
+#
+# Utilisation (dans le dossier de déploiement) :
+#     ./deploy.sh <tag>             # ce que fait aussi le pipeline
+#     docker compose -f compose.prod.yaml ps
+# ============================================================================
+
+# Nom du projet Compose : il préfixe les conteneurs, réseaux et volumes
+# (taskflow-prod-db-1...). Ainsi la "prod" ne se mélange pas avec la stack de dev,
+# même sur la même machine.
+name: taskflow-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: taskflow
+      # ":?" = erreur claire si la variable est absente (plutôt qu'un mot de passe vide)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: taskflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    # Redémarre automatiquement après un crash ou un reboot de la machine,
+    # sauf si on l'a arrêté volontairement (docker compose stop).
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER manquant dans .env}/taskflow-api:${IMAGE_TAG:-latest}
+    # Toutes les variables du fichier .env sont transmises au conteneur
+    # (DATABASE_URL, APP_ENV...). Si DATABASE_URL est absente ou mal nommée, l'API
+    # retombe sur localhost, ne trouve pas la base et plante : voir docs/INCIDENTS.md.
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  front:
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER manquant dans .env}/taskflow-front:${IMAGE_TAG:-latest}
+    # Pas de `ports:` : le front n'est joignable que par le proxy, à travers le
+    # réseau privé de Compose.
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Le reverse proxy : point d'entrée unique, qui parle HTTPS avec le navigateur.
+  proxy:
+    image: nginx:1.27-alpine
+    # SEUL service qui publie des ports vers la machine. Les variables permettent de
+    # choisir d'autres ports si 80/443 sont déjà occupés (ex: HTTP_PORT=8081).
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # Configuration Nginx (lecture seule : ":ro"). Elle remplace la configuration
+      # par défaut de l'image.
+      - ./nginx/taskflow.conf:/etc/nginx/conf.d/default.conf:ro
+      # Certificat et clé privée (générés par gen-cert.sh, JAMAIS dans Git)
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      front:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/nginx-health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  pgdata:

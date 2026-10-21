@@ -1,0 +1,18 @@
+# Dépendances (se réinstallent avec `npm ci`)
+node_modules/
+
+# Résultats de build et rapports de tests : générés, jamais versionnés
+dist/
+reports/
+coverage/
+
+# Secrets et configuration locale : JAMAIS dans Git (on versionne seulement .env.example)
+.env
+.env.*
+!.env.example
+
+# Fichiers d'éditeur / système
+.DS_Store
+.idea/
+.vscode/
+*.log

@@ -1,0 +1,15 @@
+# À n'ouvrir qu'à l'étape « cause racine » de la méthode.
+# Commandes lancées sur le poste qui héberge la stack taskflow-prod (mot de passe masqué : ***).
+
+$ cd ~/taskflow-prod
+$ docker inspect taskflow-prod-api-1 --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -iE 'database|app_env'
+DATABASE_UR=postgres://taskflow:***@db:5432/taskflow
+APP_ENV=production
+
+$ grep -n DATABASE .env
+9:# (par exemple : openssl rand -hex 24). Attention, il doit être répété dans DATABASE_URL.
+14:# Le nom de la variable doit être EXACTEMENT DATABASE_URL.
+15:DATABASE_UR=postgres://taskflow:***@db:5432/taskflow
+
+$ ls -l --time-style=+%H:%M .env
+-rw------- 1 alice alice 1287 14:01 .env

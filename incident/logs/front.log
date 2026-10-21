@@ -1,0 +1,19 @@
+# $ docker compose -f compose.prod.yaml logs --since 15m front     (extrait, heures en UTC)
+# Le conteneur « front » (Nginx) reçoit les requêtes du proxy (172.20.0.5) ; la dernière
+# colonne des lignes d'accès est l'adresse du navigateur transmise par le proxy (X-Forwarded-For).
+front-1  | 172.20.0.5 - - [22/Oct/2026:13:54:31 +0000] "GET /api/tasks HTTP/1.0" 200 412 "https://taskflow.localhost/" "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" "172.20.0.1"
+front-1  | 172.20.0.5 - - [22/Oct/2026:13:57:02 +0000] "POST /api/tasks HTTP/1.0" 201 89 "https://taskflow.localhost/" "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" "172.20.0.1"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:04:47 +0000] "GET / HTTP/1.0" 200 978 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15" "172.20.0.1"
+front-1  | 2026/10/22 14:04:47 [error] 31#31: *1187 api could not be resolved (3: Host not found), client: 172.20.0.5, server: _, request: "GET /api/tasks HTTP/1.0", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:04:47 +0000] "GET /api/tasks HTTP/1.0" 502 157 "https://taskflow.localhost/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15" "172.20.0.1"
+front-1  | 2026/10/22 14:04:47 [error] 32#32: *1189 api could not be resolved (3: Host not found), client: 172.20.0.5, server: _, request: "GET /health HTTP/1.0", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:04:47 +0000] "GET /health HTTP/1.0" 502 157 "https://taskflow.localhost/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15" "172.20.0.1"
+front-1  | 2026/10/22 14:05:12 [error] 31#31: *1193 connect() failed (111: Connection refused) while connecting to upstream, client: 172.20.0.5, server: _, request: "POST /api/tasks HTTP/1.0", upstream: "http://172.20.0.3:3000/api/tasks", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:05:12 +0000] "POST /api/tasks HTTP/1.0" 502 157 "https://taskflow.localhost/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15" "172.20.0.1"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:05:58 +0000] "GET / HTTP/1.0" 200 978 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" "172.20.0.1"
+front-1  | 2026/10/22 14:05:58 [error] 32#32: *1201 api could not be resolved (3: Host not found), client: 172.20.0.5, server: _, request: "GET /api/tasks HTTP/1.0", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:05:58 +0000] "GET /api/tasks HTTP/1.0" 502 157 "https://taskflow.localhost/" "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" "172.20.0.1"
+front-1  | 2026/10/22 14:05:58 [error] 31#31: *1203 api could not be resolved (3: Host not found), client: 172.20.0.5, server: _, request: "GET /health HTTP/1.0", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:05:58 +0000] "GET /health HTTP/1.0" 502 157 "https://taskflow.localhost/" "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" "172.20.0.1"
+front-1  | 2026/10/22 14:06:40 [error] 32#32: *1207 api could not be resolved (3: Host not found), client: 172.20.0.5, server: _, request: "GET /health HTTP/1.0", host: "taskflow.localhost"
+front-1  | 172.20.0.5 - - [22/Oct/2026:14:06:40 +0000] "GET /health HTTP/1.0" 502 157 "-" "curl/8.5.0" "172.20.0.1"

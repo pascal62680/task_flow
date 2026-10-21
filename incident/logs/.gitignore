@@ -1,0 +1,2 @@
+# Ces journaux sont des pièces d'exercice : à versionner malgré le *.log du .gitignore racine
+!*.log

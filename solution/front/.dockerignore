@@ -1,0 +1,14 @@
+# Fichiers exclus du contexte de build (voir api/.dockerignore pour les explications).
+node_modules
+dist
+.env
+.env.*
+tests
+reports
+coverage
+eslint.config.js
+.prettierrc.json
+.prettierignore
+Dockerfile
+.dockerignore
+*.log

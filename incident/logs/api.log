@@ -1,0 +1,14 @@
+# $ docker compose -f compose.prod.yaml logs --since 15m api     (extrait, heures en UTC)
+# Le conteneur api a été recréé à 14:03:10 par le déploiement de la version 9f3b2d1.
+api-1  | {"time":"2026-10-22T14:03:10.412Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:10.981Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:11.694Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:12.803Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:14.722Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:18.240Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:24.951Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:03:38.067Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:04:04.081Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:04:55.705Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:05:56.329Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}
+api-1  | {"time":"2026-10-22T14:06:56.948Z","level":"fatal","message":"Démarrage impossible : connect ECONNREFUSED 127.0.0.1:5432","hint":"Vérifiez DATABASE_URL et que PostgreSQL est joignable"}

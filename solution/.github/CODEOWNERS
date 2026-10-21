@@ -1,0 +1,16 @@
+# CODEOWNERS : désigne qui doit relire (et approuver) les modifications de chaque partie du code.
+# GitHub demande automatiquement une revue à ces personnes dans les Pull Requests.
+# Combiné avec la protection de la branche main ("Require review from Code Owners"),
+# personne ne peut modifier ces fichiers sans leur accord.
+#
+# Format : <chemin ou motif>  <@utilisateur ou @organisation/équipe> ...
+# Décommentez et remplacez par vos identifiants GitHub pour l'activer.
+
+# Par défaut, tout le dépôt est relu par le binôme :
+# *                       @votre-binome
+
+# L'infrastructure (CI/CD, Docker, déploiement) demande plus d'attention :
+# /.github/               @votre-compte
+# /deploy/                @votre-compte
+# compose*.yaml           @votre-compte
+# **/Dockerfile           @votre-compte

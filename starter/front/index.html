@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow</title>
+  </head>
+  <body>
+    <main class="app">
+      <h1>TaskFlow</h1>
+      <p class="subtitle">Votre gestionnaire de tâches</p>
+
+      <form id="new-task-form" class="new-task">
+        <input
+          id="new-task-title"
+          type="text"
+          placeholder="Nouvelle tâche..."
+          maxlength="200"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Ajouter</button>
+      </form>
+
+      <p id="error" class="error" role="alert" hidden></p>
+      <ul id="task-list" class="task-list"></ul>
+
+      <footer class="status" id="status">Vérification de l'API...</footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

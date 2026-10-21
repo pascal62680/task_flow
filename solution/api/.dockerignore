@@ -1,0 +1,21 @@
+# Fichiers exclus du "contexte de build" envoyé à Docker.
+# Avantages : build plus rapide, image plus petite, et aucun secret copié par erreur.
+
+# Les dépendances sont réinstallées DANS l'image (npm ci) : ne pas copier celles de
+# votre poste (elles peuvent même être incompatibles : autre système, autre architecture).
+node_modules
+
+# Secrets locaux
+.env
+.env.*
+
+# Tout ce qui ne sert pas à faire tourner l'API
+tests
+reports
+coverage
+eslint.config.js
+.prettierrc.json
+.prettierignore
+Dockerfile
+.dockerignore
+*.log

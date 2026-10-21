@@ -1,0 +1,186 @@
+# ============================================================================
+# release.yml : Livraison (CD) = construire les images, les publier, les déployer
+#
+#   push sur main ──► job "build"  : construit les images, les publie sur ghcr.io
+#                  └─► job "deploy" : met à jour la "prod" locale (stack Compose
+#                                     dans le dossier de déploiement) puis la teste
+#
+# Rollback (retour arrière) : onglet Actions > Release > "Run workflow", puis saisir
+# le champ "tag" d'une version précédente (ex: a1b2c3d). Le build est alors sauté et
+# on redéploie directement cette ancienne version.
+# ============================================================================
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  # Déclenchement MANUEL depuis l'interface GitHub
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag d'image à déployer (rollback). Vide = construire et déployer le commit courant."
+        required: false
+        default: ""
+        type: string
+
+# Un seul déploiement à la fois ; on n'interrompt jamais un déploiement en cours,
+# les suivants attendent leur tour.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ---------- Job 1 : construire et publier les images ------------------------
+  build:
+    name: Construire et publier les images
+    # Sauté quand on lance un rollback avec un tag : les images existent déjà.
+    if: ${{ inputs.tag == '' }}
+    runs-on: ubuntu-latest
+
+    # Permissions du GITHUB_TOKEN (jeton créé automatiquement pour chaque run) :
+    # lire le code + ÉCRIRE dans le registre de paquets (ghcr.io).
+    permissions:
+      contents: read
+      packages: write
+
+    # Valeur transmise au job suivant
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Calcule : le tag (SHA court du commit) et le propriétaire EN MINUSCULES.
+      # ghcr.io refuse les majuscules dans les noms d'image : "MonCompte" doit devenir "moncompte".
+      # (${VAR,,} est la syntaxe bash pour passer en minuscules)
+      - name: Calculer le tag et le nom des images
+        id: meta
+        run: |
+          echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      # Connexion au registre avec le jeton automatique : aucun mot de passe à gérer
+      - name: Connexion à ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Construit l'image de l'API et la publie avec DEUX tags :
+      #  - le SHA court : identifie précisément une version (pour le rollback)
+      #  - latest       : "la dernière version"
+      - name: Build et push de l'API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/taskflow-api:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/taskflow-api:latest
+          # Injecte la version dans l'image (affichée par /health)
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build et push du front
+        uses: docker/build-push-action@v6
+        with:
+          context: ./front
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/taskflow-front:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/taskflow-front:latest
+          cache-from: type=gha,scope=front
+          cache-to: type=gha,mode=max,scope=front
+
+  # ---------- Job 2 : déployer la "prod" ---------------------------------------
+  deploy:
+    name: Déployer la prod
+    needs: build
+    # `needs: build` seul sauterait ce job quand build est sauté (rollback).
+    # always() + test du résultat : on déploie si build a réussi OU a été volontairement sauté.
+    if: ${{ always() && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+
+    # Runner "self-hosted" : un runner à NOUS (le conteneur du lab), installé sur votre
+    # poste, qui a accès au Docker de votre machine. Les runners de GitHub, eux, ne
+    # peuvent pas atteindre votre ordinateur. Le runner fournit la variable DEPLOY_DIR :
+    # le dossier de déploiement (~/taskflow-prod).
+    runs-on: [self-hosted, lab]
+
+    # Environnement GitHub "production" : permet d'y attacher des secrets, des
+    # règles d'approbation manuelle et l'historique des déploiements.
+    environment: production
+
+    permissions:
+      contents: read
+      packages: read   # nécessaire pour que `docker pull` puisse lire les images privées
+
+    env:
+      # Tag à déployer : celui saisi à la main (rollback) sinon celui qui vient d'être construit
+      DEPLOY_TAG: ${{ inputs.tag != '' && inputs.tag || needs.build.outputs.tag }}
+      # Port HTTPS de la prod : variable de dépôt (Settings > Variables), 443 par défaut
+      HTTPS_PORT: ${{ vars.HTTPS_PORT || '443' }}
+
+    steps:
+      # Sécurité : le tag sera utilisé dans des commandes shell. On n'accepte donc que
+      # des caractères "sûrs" (lettres, chiffres, point, tiret, underscore).
+      - name: Valider le tag et le dossier de déploiement
+        run: |
+          if [[ ! "$DEPLOY_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Tag invalide : '$DEPLOY_TAG'" >&2
+            exit 1
+          fi
+          if [ -z "${DEPLOY_DIR:-}" ] || [ ! -d "$DEPLOY_DIR" ]; then
+            echo "DEPLOY_DIR absent ou introuvable : le runner du lab est-il bien configuré ?" >&2
+            exit 1
+          fi
+          echo "Version à déployer : $DEPLOY_TAG, dans $DEPLOY_DIR"
+
+      # Récupère le dépôt pour disposer des fichiers de déploiement à jour
+      - uses: actions/checkout@v4
+
+      # Copie les fichiers "versionnés" vers le dossier de déploiement.
+      # On ne copie JAMAIS .env ni certs/ : ils n'existent que dans ce dossier
+      # (secrets propres au serveur, absents du dépôt).
+      - name: Copier les fichiers de déploiement
+        run: |
+          mkdir -p "$DEPLOY_DIR/nginx"
+          cp compose.prod.yaml "$DEPLOY_DIR/"
+          cp deploy/nginx/taskflow.conf "$DEPLOY_DIR/nginx/"
+          cp deploy/*.sh "$DEPLOY_DIR/"
+          chmod +x "$DEPLOY_DIR"/*.sh
+
+      # Connexion de Docker au registre avec le jeton du run : aucun mot de passe à gérer.
+      # Le jeton passe par l'entrée standard (--password-stdin) pour ne jamais apparaître
+      # dans une ligne de commande.
+      - name: Connexion à ghcr.io
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+      # Exécute le script de déploiement : pull des images puis `up -d`
+      - name: Lancer deploy.sh
+        run: |
+          cd "$DEPLOY_DIR"
+          ./deploy.sh "$DEPLOY_TAG"
+
+      # Smoke test ("test de fumée") : l'application répond-elle vraiment, en HTTPS ?
+      # -f : échec si HTTP >= 400 ; -s : silencieux ; -k : accepte le certificat auto-signé.
+      # --retry 10 --retry-all-errors : jusqu'à 10 nouveaux essais (3 s d'écart), car les
+      # conteneurs mettent quelques secondes à être prêts.
+      # host.docker.internal = "la machine hôte", vue depuis le conteneur du runner.
+      - name: Smoke test
+        run: |
+          curl -fsk --retry 10 --retry-all-errors --retry-delay 3 \
+            "https://host.docker.internal:${HTTPS_PORT}/health"
+          echo
+          echo "Déploiement validé : $DEPLOY_TAG"

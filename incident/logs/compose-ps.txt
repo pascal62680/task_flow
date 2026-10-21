@@ -1,0 +1,11 @@
+# Jeudi 22 octobre 2026, 14:07 (heure UTC, comme dans les logs) - poste qui héberge la stack taskflow-prod
+$ cd ~/taskflow-prod
+$ docker compose -f compose.prod.yaml ps
+NAME                    IMAGE                                       COMMAND                  SERVICE   CREATED          STATUS                          PORTS
+taskflow-prod-api-1     ghcr.io/alice-dwwm/taskflow-api:9f3b2d1     "docker-entrypoint.s…"   api       4 minutes ago    Restarting (1) 9 seconds ago
+taskflow-prod-db-1      postgres:16-alpine                          "docker-entrypoint.s…"   db        2 days ago       Up 2 days (healthy)             5432/tcp
+taskflow-prod-front-1   ghcr.io/alice-dwwm/taskflow-front:4e7a1c2   "/docker-entrypoint.…"   front     2 days ago       Up 2 days (healthy)             80/tcp
+taskflow-prod-proxy-1   nginx:1.27-alpine                           "/docker-entrypoint.…"   proxy     2 days ago       Up 2 days (healthy)             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+
+$ cat .deployed_tag
+4e7a1c2

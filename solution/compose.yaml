@@ -1,0 +1,72 @@
+# ============================================================================
+# compose.yaml : environnement de DÉVELOPPEMENT complet en une commande
+#
+#     docker compose up -d --build     # démarre db + api + front
+#     docker compose ps                # état des services (healthy ?)
+#     docker compose logs -f api       # suivre les logs de l'API
+#     docker compose down              # arrête et supprime les conteneurs
+#     docker compose down -v           # idem + supprime le volume (efface les données !)
+#
+# Application accessible sur http://localhost:8080
+#
+# Un "service" = un conteneur décrit ici. Compose crée automatiquement un réseau
+# privé où les services se joignent PAR LEUR NOM (l'API contacte la base via "db").
+# ============================================================================
+
+services:
+  # ---------- Base de données PostgreSQL ------------------------------------
+  db:
+    image: postgres:16-alpine
+    # Variables lues par l'image postgres au premier démarrage pour créer
+    # l'utilisateur et la base. ${VAR:-défaut} = valeur de la variable d'environnement
+    # (ou du fichier .env), sinon la valeur après ":-".
+    environment:
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskflow}
+      POSTGRES_DB: taskflow
+    # Volume NOMMÉ : les données survivent à la suppression du conteneur.
+    # Sans lui, tout serait perdu à chaque `docker compose down`.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Healthcheck : "la base est-elle prête à accepter des connexions ?"
+    # (un conteneur "démarré" n'est pas forcément "prêt")
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ---------- API Node ------------------------------------------------------
+  api:
+    # `build` : Compose construit l'image à partir de api/Dockerfile
+    build:
+      context: ./api
+    environment:
+      PORT: "3000"
+      # Notez l'hôte "db" (nom du service) et non "localhost" !
+      DATABASE_URL: postgres://taskflow:${POSTGRES_PASSWORD:-taskflow}@db:5432/taskflow
+      APP_ENV: local
+      APP_VERSION: dev
+    # L'API ne démarre qu'une fois la base "healthy" (évite les erreurs de connexion)
+    depends_on:
+      db:
+        condition: service_healthy
+    # Le HEALTHCHECK est défini dans api/Dockerfile : pas besoin de le répéter ici.
+    restart: unless-stopped
+
+  # ---------- Front (Nginx) -------------------------------------------------
+  front:
+    build:
+      context: ./front
+    # "hôte:conteneur" : http://localhost:8080 -> port 80 du conteneur
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Déclaration des volumes nommés utilisés ci-dessus
+volumes:
+  pgdata:
