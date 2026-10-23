@@ -36,3 +36,13 @@ jobs:
             ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-api:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-api:latest
       # même step avec context: ./front et l'image taskflow-front
+
+    # Build & push du FRONT
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./starter/front                     # dossier contenant le Dockerfile Front (ou ./front selon la structure)
+          push: true
+          build-args: APP_VERSION=${{ steps.meta.outputs.tag }}
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-front:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-front:latest
