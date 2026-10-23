@@ -1,0 +1,22 @@
+name: CI                               # nom affiché dans l'onglet Actions et sur la PR
+
+on:
+  pull_request:                        # vérifier chaque PR, avant le merge
+  push:
+    branches: [main]                   # revérifier main après chaque merge
+
+jobs: 
+
+
+  front:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: front }    # chaque `run:` s'exécute dans front/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4        # installe Node.js sur le runner
+        with: { node-version: 20, cache: npm, cache-dependency-path: front/package-lock.json }
+      - run: npm ci                        # installation exacte depuis package-lock.json
+      - run: npm run lint && npm run format:check   # ESLint puis Prettier (formatage)
+      - run: npm test                      # Vitest, fetch mocké
+      - run: npm run build                 # Vite → dist/
