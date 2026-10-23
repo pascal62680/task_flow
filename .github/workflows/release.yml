@@ -26,4 +26,13 @@ steps:
           username: ${{ github.actor }}        # l'utilisateur qui a déclenché le run
           password: ${{ secrets.GITHUB_TOKEN }}
 
-          
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./api                       # dossier contenant le Dockerfile
+          push: true                           # pousser vers le registre après le build
+          build-args: APP_VERSION=${{ steps.meta.outputs.tag }}
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-api:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/taskflow-api:latest
+      # même step avec context: ./front et l'image taskflow-front
