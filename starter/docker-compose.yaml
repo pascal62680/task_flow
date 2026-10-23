@@ -1,0 +1,49 @@
+services:
+  # Base PostgreSQL : remplace le "docker run ... postgres:16"
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow
+      POSTGRES_DB: taskflow
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - taskflow-net
+    # L'API crée sa table au démarrage : elle doit attendre que Postgres accepte les connexions
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build: ./api
+    environment:
+      # "db" = nom du service ci-dessus, résolu par le DNS du réseau
+      DATABASE_URL: postgres://taskflow:taskflow@db:5432/taskflow
+    ports:
+      - "3000:3000"
+    networks:
+      - taskflow-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  front:
+    build: ./front
+    environment:
+      # "api" = nom du service, jamais localhost entre containers
+      API_URL: http://api:3000
+    ports:
+      - "3001:3000"
+    networks:
+      - taskflow-net
+    depends_on:
+      - api
+
+networks:
+  taskflow-net:
+
+volumes:
+  db-data:
