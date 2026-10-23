@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [main]                  # uniquement après un merge sur main
+
+permissions:
+  contents: read
+  packages: write                     # sans cette ligne : « denied » au push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}  # exposé au job deploy de demain
+      
+steps:
+      - uses: actions/checkout@v4
+      - id: meta                               # id = pour lire ses sorties plus loin
+        run: |
+          echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"                 # 7 premiers caractères
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"   # ,, = en minuscules
+      - uses: docker/login-action@v3           # docker login ghcr.io
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}        # l'utilisateur qui a déclenché le run
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+          
