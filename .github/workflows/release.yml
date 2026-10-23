@@ -14,7 +14,7 @@ jobs:
     outputs:
       tag: ${{ steps.meta.outputs.tag }}  # exposé au job deploy de demain
       
-steps:
+    steps:
       - uses: actions/checkout@v4
       - id: meta                               # id = pour lire ses sorties plus loin
         run: |
