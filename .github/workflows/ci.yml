@@ -7,11 +7,10 @@ on:
 
 jobs: 
 
-
   front:
     runs-on: ubuntu-latest
     defaults:
-      run: { working-directory: starter/front }    # chaque `run:` s'exécute dans front/
+      run: { working-directory: starter/front }    # chaque `run:` s'exécute dans starter/front/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4        # installe Node.js sur le runner
@@ -20,3 +19,16 @@ jobs:
       - run: npm run lint && npm run format:check   # ESLint puis Prettier (formatage)
       - run: npm test                      # Vitest, fetch mocké
       - run: npm run build                 # Vite → dist/
+
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: starter/api }      # chaque `run:` s'exécute dans starter/api/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: starter/api/package-lock.json }
+      - run: npm ci
+      - run: npm run lint && npm run format:check
+      - run: npm test 
+      - run: npm run build
