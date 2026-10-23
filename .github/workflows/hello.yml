@@ -1,0 +1,12 @@
+name: Hello                                  # nom affiché dans l'onglet Actions
+on:
+  push:                                      # à chaque push, toutes branches
+  workflow_dispatch:                         # + bouton manuel
+jobs:
+  dire-bonjour:                              # identifiant du job (libre)
+    runs-on: ubuntu-latest                   # runner hébergé par GitHub
+    steps:
+      - uses: actions/checkout@v4            # récupère le code du dépôt sur le runner
+      - name: Saluer                         # nom lisible du step
+        run: echo "Bonjour depuis ${{ github.repository }} (${{ github.ref_name }})"
+      - run: ls -la                          # le code est bien là
