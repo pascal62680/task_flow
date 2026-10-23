@@ -18,7 +18,7 @@ services:
       retries: 15
 
   api:
-    build: ./api
+    image: ghcr.io/pascal62680/taskflow-api:d36fbe8
     environment:
       # "db" = nom du service ci-dessus, résolu par le DNS du réseau
       DATABASE_URL: postgres://taskflow:taskflow@db:5432/taskflow
@@ -31,7 +31,7 @@ services:
         condition: service_healthy
 
   front:
-    build: ./front
+    image: ghcr.io/pascal62680/taskflow-front:latest
     environment:
       # "api" = nom du service, jamais localhost entre containers
       API_URL: http://api:3000
