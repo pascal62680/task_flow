@@ -29,7 +29,7 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ./api                       # dossier contenant le Dockerfile
+          context: ./starter/api                       # dossier contenant le Dockerfile
           push: true                           # pousser vers le registre après le build
           build-args: APP_VERSION=${{ steps.meta.outputs.tag }}
           tags: |
